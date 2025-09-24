@@ -36,12 +36,6 @@ git submodule update --init --recursive
    CREATE DATABASE chamado_pro;
    ```
 
-3. (Opcional) Crie um usuário específico:
-   ```sql
-   CREATE USER chamado_user WITH ENCRYPTED PASSWORD 'senha123';
-   GRANT ALL PRIVILEGES ON DATABASE chamado_pro TO chamado_user;
-   ```
-
 ## 🛠️ Configuração da aplicação
 
 No arquivo `src/main/resources/application.properties` configure:
