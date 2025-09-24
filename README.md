@@ -50,7 +50,7 @@ spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.format_sql=true
 ```
 
-⚠️ **Troque `chamado_user` e `senha123` pelos dados reais do seu banco.**
+⚠️ **Troque pelos dados reais do seu banco.**
 
 ## ▶️ Rodando o backend
 
