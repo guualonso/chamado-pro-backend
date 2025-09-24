@@ -33,7 +33,7 @@ git submodule update --init --recursive
 
 2. Crie o banco de dados:
    ```sql
-   CREATE DATABASE chamado_pro;
+   CREATE DATABASE chamado-pro;
    ```
 
 ## 🛠️ Configuração da aplicação
