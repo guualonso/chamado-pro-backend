@@ -5,8 +5,9 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.chamado.dto.ChamadoDTO;
 import com.chamado.model.Chamado;
-import com.chamado.model.Usuario;
+// import com.chamado.model.Usuario; // Implementação futura
 // import com.chamado.model.enums.CategoriaProblema; // Implementação futura
 import com.chamado.model.enums.StatusChamado;
 import com.chamado.repository.ChamadoRepository;
@@ -20,55 +21,68 @@ public class ChamadoService {
         this.chamadoRepository = chamadoRepository;
     }
 
-    public Chamado criarChamado(Chamado chamado) {
-        // Validações de negócio
-        if (chamado.getCliente() == null) {
-            throw new RuntimeException("Cliente é obrigatório para abrir um chamado");
-        }
-        
-        if (chamado.getTitulo() == null || chamado.getTitulo().trim().isEmpty()) {
-            throw new RuntimeException("Título é obrigatório");
-        }
-        
-        // Define valores padrão
+    public ChamadoDTO criarChamado(ChamadoDTO dto) {
+        Chamado chamado = new Chamado();
+        chamado.setTitulo(dto.getTitulo());
+        chamado.setDescricao(dto.getDescricao());
         chamado.setStatus(StatusChamado.ABERTO);
         chamado.setDataCriacao(LocalDateTime.now());
-        
-        return chamadoRepository.save(chamado);
+
+        Chamado salvo = chamadoRepository.save(chamado);
+        return toDTO(salvo);
     }
 
-    public List<Chamado> listarTodos() {
-        return chamadoRepository.findAll();
+    public List<ChamadoDTO> listarTodos() {
+        return chamadoRepository.findAll().stream()
+                .map(this::toDTO)
+                .toList();
     }
 
-    public List<Chamado> listarPorCliente(Usuario cliente) {
-        return chamadoRepository.findByCliente(cliente);
-    }
-
-    public Chamado buscarPorId(Long id) {
-        return chamadoRepository.findById(id)
+    public ChamadoDTO buscarPorId(Long id) {
+        Chamado chamado = chamadoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Chamado não encontrado"));
+        return toDTO(chamado);
     }
 
-    public Chamado atualizarChamado(Long id, Chamado chamadoAtualizado) {
-        Chamado chamado = buscarPorId(id);
+    public ChamadoDTO atualizarChamado(Long id, ChamadoDTO dto) {
+        Chamado chamado = chamadoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Chamado não encontrado"));
 
-        // Lógica de negócio para atualização
-        chamado.setTitulo(chamadoAtualizado.getTitulo());
-        chamado.setDescricao(chamadoAtualizado.getDescricao());
-        chamado.setCategoria(chamadoAtualizado.getCategoria());
-        
-        // O status só é atualizado se for fornecido
-        if (chamadoAtualizado.getStatus() != null) {
-            chamado.setStatus(chamadoAtualizado.getStatus());
-        }
+        chamado.setTitulo(dto.getTitulo());
+        chamado.setDescricao(dto.getDescricao());
+        chamado.setStatus(dto.getStatus() != null ? dto.getStatus() : chamado.getStatus());
+        chamado.setUltimaAtualizacao(LocalDateTime.now());
 
-        return chamadoRepository.save(chamado);
+        Chamado atualizado = chamadoRepository.save(chamado);
+        return toDTO(atualizado);
     }
 
     public void excluirChamado(Long id) {
-        Chamado chamado = buscarPorId(id);
+        Chamado chamado = chamadoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Chamado não encontrado"));
         chamadoRepository.delete(chamado);
+    }
+
+    private ChamadoDTO toDTO(Chamado chamado) {
+        ChamadoDTO dto = new ChamadoDTO();
+        dto.setId(chamado.getId());
+        dto.setTitulo(chamado.getTitulo());
+        dto.setDescricao(chamado.getDescricao());
+        dto.setStatus(chamado.getStatus());
+        dto.setDataCriacao(chamado.getDataCriacao());
+        dto.setUltimaAtualizacao(chamado.getUltimaAtualizacao());
+
+        if (chamado.getCliente() != null) {
+            dto.setClienteNome(chamado.getCliente().getNome());
+        }
+        /**if (chamado.getTecnico() != null) {
+            dto.setTecnicoNome(chamado.getTecnico().getNome());
+        }
+        if (chamado.getAdmin() != null) {
+            dto.setAdminNome(chamado.getAdmin().getNome());
+        }**/
+
+        return dto;
     }
 
     /*

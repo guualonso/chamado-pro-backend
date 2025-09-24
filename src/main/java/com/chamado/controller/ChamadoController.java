@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.chamado.model.Chamado;
+import com.chamado.dto.ChamadoDTO;
 // import com.chamado.model.Usuario; // Para implementação futura
 import com.chamado.service.ChamadoService;
 
@@ -27,23 +27,23 @@ public class ChamadoController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Chamado>> listarTodos() {
+    public ResponseEntity<List<ChamadoDTO>> listarTodos() {
         return ResponseEntity.ok(chamadoService.listarTodos());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Chamado> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<ChamadoDTO> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(chamadoService.buscarPorId(id));
     }
 
     @PostMapping
-    public ResponseEntity<Chamado> criarChamado(@RequestBody Chamado chamado) {
-        return ResponseEntity.ok(chamadoService.criarChamado(chamado));
+    public ResponseEntity<ChamadoDTO> criarChamado(@RequestBody ChamadoDTO dto) {
+        return ResponseEntity.ok(chamadoService.criarChamado(dto));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Chamado> atualizarChamado(@PathVariable Long id, @RequestBody Chamado chamado) {
-        return ResponseEntity.ok(chamadoService.atualizarChamado(id, chamado));
+    public ResponseEntity<ChamadoDTO> atualizarChamado(@PathVariable Long id, @RequestBody ChamadoDTO dto) {
+        return ResponseEntity.ok(chamadoService.atualizarChamado(id, dto));
     }
 
     @DeleteMapping("/{id}")

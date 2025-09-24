@@ -40,7 +40,10 @@ public class Chamado {
 
     private LocalDateTime ultimaAtualizacao;
 
-    // Cliente que abriu o chamado (OBRIGATÓRIO para abrir chamado)
+    private double avaliacao;
+
+    private String feedback;
+    
     @ManyToOne
     @JoinColumn(name = "cliente_id")
     private Usuario cliente;
