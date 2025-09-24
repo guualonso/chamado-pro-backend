@@ -11,7 +11,7 @@ public interface ChamadoRepository extends JpaRepository<Chamado, Long> {
 
     List<Chamado> findByCliente(Usuario cliente);
 
-    List<Chamado> findByTecnico(Usuario tecnico);
+    // List<Chamado> findByTecnico(Usuario tecnico); // Para implementação futura
 
-    List<Chamado> findByAdmin(Usuario admin);
+    // List<Chamado> findByAdmin(Usuario admin); // Para implementação futura
 }

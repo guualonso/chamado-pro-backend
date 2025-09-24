@@ -1,8 +1,8 @@
 package com.chamado.model;
 
-
 import java.time.LocalDateTime;
-import java.util.List;
+// import java.util.ArrayList;
+// import java.util.List;
 
 import com.chamado.model.enums.CategoriaProblema;
 import com.chamado.model.enums.StatusChamado;
@@ -10,11 +10,14 @@ import com.chamado.model.enums.StatusChamado;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 @Entity
 @Getter
 @Setter
+@NoArgsConstructor  
+@AllArgsConstructor
 @Table(name = "chamados")
 public class Chamado {
 
@@ -37,24 +40,38 @@ public class Chamado {
 
     private LocalDateTime ultimaAtualizacao;
 
-    // Cliente que abriu o chamado
+    // Cliente que abriu o chamado (OBRIGATÓRIO para abrir chamado)
     @ManyToOne
     @JoinColumn(name = "cliente_id")
     private Usuario cliente;
 
-    // Técnico responsável (pode ser null inicialmente)
-    @ManyToOne
-    @JoinColumn(name = "tecnico_id")
-    private Usuario tecnico;
+    @PrePersist
+    protected void onCreate() {
+        if (dataCriacao == null) {
+            dataCriacao = LocalDateTime.now();
+        }
+        if (ultimaAtualizacao == null) {
+            ultimaAtualizacao = LocalDateTime.now();
+        }
+    }
 
-    // Admin responsável (opcional)
-    @ManyToOne
-    @JoinColumn(name = "admin_id")
-    private Usuario admin;
+    @PreUpdate
+    protected void onUpdate() {
+        ultimaAtualizacao = LocalDateTime.now();
+    }
+    
+    // Técnico responsável - PARA IMPLEMENTAÇÃO FUTURA
+    // @ManyToOne
+    // @JoinColumn(name = "tecnico_id")
+    // private Usuario tecnico;
 
-    // Comentários
-    @OneToMany(mappedBy = "chamado", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Comentario> comentarios;
+    // Admin responsável - PARA IMPLEMENTAÇÃO FUTURA  
+    // @ManyToOne
+    // @JoinColumn(name = "admin_id")
+    // private Usuario admin;
 
-    // Getters e Setters
+    // Comentários - PARA IMPLEMENTAÇÃO FUTURA
+    // @OneToMany(mappedBy = "chamado", cascade = CascadeType.ALL, orphanRemoval = true)
+    // private List<Comentario> comentarios = new ArrayList<>();
+
 }
