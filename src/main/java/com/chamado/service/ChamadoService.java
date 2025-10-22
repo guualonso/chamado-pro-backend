@@ -3,6 +3,7 @@ package com.chamado.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.chamado.dto.ChamadoDTO;
@@ -11,11 +12,15 @@ import com.chamado.model.Chamado;
 // import com.chamado.model.enums.CategoriaProblema; // Implementação futura
 import com.chamado.model.enums.StatusChamado;
 import com.chamado.repository.ChamadoRepository;
+import com.chamado.repository.UsuarioRepository;
 
 @Service
 public class ChamadoService {
 
     private final ChamadoRepository chamadoRepository;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     public ChamadoService(ChamadoRepository chamadoRepository) {
         this.chamadoRepository = chamadoRepository;
@@ -27,6 +32,12 @@ public class ChamadoService {
         chamado.setDescricao(dto.getDescricao());
         chamado.setStatus(StatusChamado.ABERTO);
         chamado.setDataCriacao(LocalDateTime.now());
+
+        if (dto.getClienteId() != null) {
+            var cliente = usuarioRepository.findById(dto.getClienteId())
+                    .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+            chamado.setCliente(cliente);
+        }
 
         Chamado salvo = chamadoRepository.save(chamado);
         return toDTO(salvo);

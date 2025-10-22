@@ -16,6 +16,7 @@ public class ChamadoDTO {
     private StatusChamado status;
     private LocalDateTime dataCriacao;
     private LocalDateTime ultimaAtualizacao;
+    private Long clienteId;
     private String clienteNome;
     private String tecnicoNome;
     private String adminNome;
