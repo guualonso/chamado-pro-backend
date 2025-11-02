@@ -12,8 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.chamado.model.Chamado;
-// import com.chamado.model.Usuario; // Para implementação futura
+import com.chamado.dto.ChamadoDTO;
 import com.chamado.service.ChamadoService;
 
 @RestController
@@ -27,23 +26,23 @@ public class ChamadoController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Chamado>> listarTodos() {
+    public ResponseEntity<List<ChamadoDTO>> listarTodos() {
         return ResponseEntity.ok(chamadoService.listarTodos());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Chamado> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<ChamadoDTO> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(chamadoService.buscarPorId(id));
     }
 
     @PostMapping
-    public ResponseEntity<Chamado> criarChamado(@RequestBody Chamado chamado) {
-        return ResponseEntity.ok(chamadoService.criarChamado(chamado));
+    public ResponseEntity<ChamadoDTO> criarChamado(@RequestBody ChamadoDTO dto) {
+        return ResponseEntity.ok(chamadoService.criarChamado(dto));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Chamado> atualizarChamado(@PathVariable Long id, @RequestBody Chamado chamado) {
-        return ResponseEntity.ok(chamadoService.atualizarChamado(id, chamado));
+    public ResponseEntity<ChamadoDTO> atualizarChamado(@PathVariable Long id, @RequestBody ChamadoDTO dto) {
+        return ResponseEntity.ok(chamadoService.atualizarChamado(id, dto));
     }
 
     @DeleteMapping("/{id}")
@@ -52,19 +51,23 @@ public class ChamadoController {
         return ResponseEntity.noContent().build();
     }
 
-    /*
-    @GetMapping("/cliente/{clienteId}")
-    public ResponseEntity<List<Chamado>> listarPorCliente(@PathVariable Long clienteId) {
-        Usuario cliente = new Usuario();
-        cliente.setId(clienteId);
-        return ResponseEntity.ok(chamadoService.listarPorCliente(cliente));
+     @GetMapping("/cliente/{clienteId}")
+    public ResponseEntity<List<ChamadoDTO>> listarPorCliente(@PathVariable Long clienteId) {
+        return ResponseEntity.ok(chamadoService.listarPorCliente(clienteId));
+    }
+
+    @GetMapping("/tecnico/{tecnicoId}")
+    public ResponseEntity<List<ChamadoDTO>> listarPorTecnico(@PathVariable Long tecnicoId) {
+        return ResponseEntity.ok(chamadoService.listarPorTecnico(tecnicoId));
+    }
+
+    @GetMapping("/admin/{adminId}")
+    public ResponseEntity<List<ChamadoDTO>> listarPorAdmin(@PathVariable Long adminId) {
+        return ResponseEntity.ok(chamadoService.listarPorAdmin(adminId));
     }
 
     @PutMapping("/{id}/atribuir-tecnico/{tecnicoId}")
-    public ResponseEntity<Chamado> atribuirTecnico(@PathVariable Long id, @PathVariable Long tecnicoId) {
-        Usuario tecnico = new Usuario();
-        tecnico.setId(tecnicoId);
-        return ResponseEntity.ok(chamadoService.atribuirTecnico(id, tecnico));
+    public ResponseEntity<ChamadoDTO> atribuirTecnico(@PathVariable Long id, @PathVariable Long tecnicoId) {
+        return ResponseEntity.ok(chamadoService.atribuirTecnico(id, tecnicoId));
     }
-    */
 }

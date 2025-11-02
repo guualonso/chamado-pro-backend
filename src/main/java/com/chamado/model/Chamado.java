@@ -1,8 +1,8 @@
 package com.chamado.model;
 
 import java.time.LocalDateTime;
-// import java.util.ArrayList;
-// import java.util.List;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.chamado.model.enums.CategoriaProblema;
 import com.chamado.model.enums.StatusChamado;
@@ -40,7 +40,10 @@ public class Chamado {
 
     private LocalDateTime ultimaAtualizacao;
 
-    // Cliente que abriu o chamado (OBRIGATÓRIO para abrir chamado)
+    private double avaliacao;
+
+    private String feedback;
+    
     @ManyToOne
     @JoinColumn(name = "cliente_id")
     private Usuario cliente;
@@ -60,18 +63,16 @@ public class Chamado {
         ultimaAtualizacao = LocalDateTime.now();
     }
     
-    // Técnico responsável - PARA IMPLEMENTAÇÃO FUTURA
-    // @ManyToOne
-    // @JoinColumn(name = "tecnico_id")
-    // private Usuario tecnico;
 
-    // Admin responsável - PARA IMPLEMENTAÇÃO FUTURA  
-    // @ManyToOne
-    // @JoinColumn(name = "admin_id")
-    // private Usuario admin;
+    @ManyToOne
+    @JoinColumn(name = "tecnico_id")
+    private Usuario tecnico;
 
-    // Comentários - PARA IMPLEMENTAÇÃO FUTURA
-    // @OneToMany(mappedBy = "chamado", cascade = CascadeType.ALL, orphanRemoval = true)
-    // private List<Comentario> comentarios = new ArrayList<>();
+    @ManyToOne
+    @JoinColumn(name = "admin_id")
+    private Usuario admin;
+
+    @OneToMany(mappedBy = "chamado", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Comentario> comentarios = new ArrayList<>();
 
 }
