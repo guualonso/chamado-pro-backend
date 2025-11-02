@@ -29,7 +29,7 @@ public class UsuarioDetailsService implements UserDetailsService {
     }
 
     private Collection<? extends GrantedAuthority> mapAuthorities(Usuario usuario) {
-        String role = "ROLE_" + usuario.getTipoUsuario().name(); // ex: ROLE_ADMIN
+        String role = "ROLE_" + usuario.getTipoUsuario().name();
         return List.of(new SimpleGrantedAuthority(role));
     }
 }

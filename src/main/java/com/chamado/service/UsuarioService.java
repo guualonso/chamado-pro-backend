@@ -58,7 +58,7 @@ public class UsuarioService {
         usuario.setTipoUsuario(dto.getTipoUsuario());
 
         if (dto.getSenha() != null && !dto.getSenha().isEmpty()) {
-            usuario.setSenha(dto.getSenha());
+            usuario.setSenha(passwordEncoder.encode(dto.getSenha()));
         }
 
         Usuario atualizado = usuarioRepository.save(usuario);

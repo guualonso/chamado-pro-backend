@@ -58,17 +58,12 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // endpoints públicos
                 .requestMatchers("/auth/**").permitAll()
-                // normalmente você deixaria GET /usuarios protegido e permitir apenas ADMIN para criação:
-                .requestMatchers("/usuarios").hasRole("ADMIN") // POST /usuarios (quando bate aqui, verifique se combina com método)
-                // permitir H2-console se estiver usando (dev)
+                .requestMatchers("/usuarios/**").hasRole("ADMIN")
                 .requestMatchers("/h2-console/**").permitAll()
-                // qualquer outro endpoint precisa de autenticação
                 .anyRequest().authenticated()
             );
 
-        // permitir frame para h2 console (dev)
         http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
 
         http.authenticationProvider(authenticationProvider());
