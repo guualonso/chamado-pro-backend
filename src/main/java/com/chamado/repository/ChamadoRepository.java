@@ -12,4 +12,5 @@
         List<Chamado> findByCliente(Usuario cliente);
         List<Chamado> findByTecnico(Usuario tecnico); 
         List<Chamado> findByAdmin(Usuario admin);
+        List<Chamado> findByStatus(StatusChamado status);
     }
