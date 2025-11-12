@@ -105,13 +105,6 @@ public class ChamadoService {
                 .stream().map(this::toDTO).toList();
     }
 
-    public List<ChamadoDTO> listarPendentes() {
-        return chamadoRepository.findByStatus(StatusChamado.ABERTO)
-                .stream()
-                .map(this::toDTO)
-                .toList();
-    }
-
     public ChamadoDTO atribuirTecnico(Long chamadoId, Long tecnicoId) {
         Chamado chamado = chamadoRepository.findById(chamadoId)
                 .orElseThrow(() -> new RuntimeException("Chamado não encontrado"));

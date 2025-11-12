@@ -2,6 +2,7 @@ package com.chamado.config;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.Map;
 import java.util.function.Function;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -25,12 +26,14 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String gerarToken(String subject) {
+    // Agora o método recebe email e tipoUsuario
+    public String gerarToken(String email, String tipoUsuario) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
 
         return Jwts.builder()
-                .setSubject(subject)
+                .setSubject(email)
+                .addClaims(Map.of("role", tipoUsuario)) // adiciona o tipo de usuário ao payload
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(getSigningKey())
@@ -51,6 +54,10 @@ public class JwtUtil {
 
     public String getEmailFromToken(String token) {
         return getClaimFromToken(token, Claims::getSubject);
+    }
+
+    public String getRoleFromToken(String token) {
+        return getClaimFromToken(token, claims -> claims.get("role", String.class));
     }
 
     private <T> T getClaimFromToken(String token, Function<Claims, T> claimsResolver) {
