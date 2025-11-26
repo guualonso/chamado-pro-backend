@@ -57,12 +57,15 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/**").permitAll()
-                .requestMatchers("/usuarios/**").hasRole("ADMIN")
-                .requestMatchers("/h2-console/**").permitAll()
-                .anyRequest().authenticated()
-            );
+          .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/auth/**").permitAll()
+            .requestMatchers("/h2-console/**").permitAll()
+            .requestMatchers("/usuarios/**").hasAnyRole("ADMIN", "TECNICO")
+            .requestMatchers("/comentarios/**").authenticated()
+            .requestMatchers("/chamados/**").authenticated()
+            .anyRequest().authenticated()
+        )
+
 
         http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
 
