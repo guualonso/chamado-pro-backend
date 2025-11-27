@@ -33,13 +33,7 @@ git submodule update --init --recursive
 
 2. Crie o banco de dados:
    ```sql
-   CREATE DATABASE chamado_pro;
-   ```
-
-3. (Opcional) Crie um usuário específico:
-   ```sql
-   CREATE USER chamado_user WITH ENCRYPTED PASSWORD 'senha123';
-   GRANT ALL PRIVILEGES ON DATABASE chamado_pro TO chamado_user;
+   CREATE DATABASE chamado-pro;
    ```
 
 ## 🛠️ Configuração da aplicação
@@ -56,7 +50,7 @@ spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.format_sql=true
 ```
 
-⚠️ **Troque `chamado_user` e `senha123` pelos dados reais do seu banco.**
+⚠️ **Troque pelos dados reais do seu banco.**
 
 ## ▶️ Rodando o backend
 
