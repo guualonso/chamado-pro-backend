@@ -7,18 +7,22 @@ import org.springframework.stereotype.Service;
 import com.chamado.dto.ComentarioDTO;
 import com.chamado.model.Chamado;
 import com.chamado.model.Comentario;
+import com.chamado.model.Usuario;
 import com.chamado.repository.ChamadoRepository;
 import com.chamado.repository.ComentarioRepository;
+import com.chamado.repository.UsuarioRepository;
 
 @Service
 public class ComentarioService {
 
     private final ComentarioRepository comentarioRepository;
     private final ChamadoRepository chamadoRepository;
+    private final UsuarioRepository usuarioRepository;
 
-    public ComentarioService(ComentarioRepository comentarioRepository, ChamadoRepository chamadoRepository) {
+    public ComentarioService(ComentarioRepository comentarioRepository, ChamadoRepository chamadoRepository, UsuarioRepository usuarioRepository) {
         this.comentarioRepository = comentarioRepository;
         this.chamadoRepository = chamadoRepository;
+        this.usuarioRepository = usuarioRepository;
     }
 
     public List<ComentarioDTO> listarPorChamado(Long chamadoId) {
@@ -35,11 +39,15 @@ public class ComentarioService {
         Chamado chamado = chamadoRepository.findById(chamadoId)
                 .orElseThrow(() -> new RuntimeException("Chamado não encontrado"));
 
+        // Buscar o usuário autor pelo id ou email fornecido no DTO
+        Usuario autor = usuarioRepository.findByEmail(dto.getAutorNome())
+                .orElseThrow(() -> new RuntimeException("Usuário autor não encontrado"));
+
         Comentario comentario = new Comentario();
         comentario.setTexto(dto.getTexto());
         comentario.setChamado(chamado);
+        comentario.setAutor(autor);
 
-        // o usuário será implementado futuramente com autenticação
         Comentario salvo = comentarioRepository.save(comentario);
         return toDTO(salvo);
     }
