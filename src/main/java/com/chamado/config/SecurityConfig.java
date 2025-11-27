@@ -60,14 +60,12 @@ public class SecurityConfig {
           .authorizeHttpRequests(auth -> auth
             .requestMatchers("/auth/**").permitAll()
             .requestMatchers("/h2-console/**").permitAll()
-            .requestMatchers("/usuarios/**").hasAnyRole("ADMIN", "TECNICO")
+            .requestMatchers("/usuarios/**").authenticated()
             .requestMatchers("/comentarios/**").authenticated()
             .requestMatchers("/chamados/**").authenticated()
             .anyRequest().authenticated()
         )
-
-
-        http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
+        .headers(headers -> headers.frameOptions(frame -> frame.disable()));
 
         http.authenticationProvider(authenticationProvider());
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
