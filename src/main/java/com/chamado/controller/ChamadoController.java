@@ -30,11 +30,6 @@ public class ChamadoController {
         return ResponseEntity.ok(chamadoService.listarTodos());
     }
 
-    @GetMapping("/pendentes")
-    public ResponseEntity<List<ChamadoDTO>> listarPendentes() {
-        return ResponseEntity.ok(chamadoService.listarPendentes());
-    }
-
     @GetMapping("/{id}")
     public ResponseEntity<ChamadoDTO> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(chamadoService.buscarPorId(id));
