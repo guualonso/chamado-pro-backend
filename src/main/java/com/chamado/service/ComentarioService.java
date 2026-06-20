@@ -7,9 +7,12 @@ import org.springframework.stereotype.Service;
 import com.chamado.dto.ComentarioDTO;
 import com.chamado.model.Chamado;
 import com.chamado.model.Comentario;
+import com.chamado.model.Historico;
 import com.chamado.model.Usuario;
+import com.chamado.model.enums.TipoEventoHistorico;
 import com.chamado.repository.ChamadoRepository;
 import com.chamado.repository.ComentarioRepository;
+import com.chamado.repository.HistoricoRepository;
 import com.chamado.repository.UsuarioRepository;
 
 @Service
@@ -18,11 +21,17 @@ public class ComentarioService {
     private final ComentarioRepository comentarioRepository;
     private final ChamadoRepository chamadoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final HistoricoRepository historicoRepository;
+    private final NotificacaoService notificacaoService;
 
-    public ComentarioService(ComentarioRepository comentarioRepository, ChamadoRepository chamadoRepository, UsuarioRepository usuarioRepository) {
+    public ComentarioService(ComentarioRepository comentarioRepository, ChamadoRepository chamadoRepository,
+            UsuarioRepository usuarioRepository, HistoricoRepository historicoRepository,
+            NotificacaoService notificacaoService) {
         this.comentarioRepository = comentarioRepository;
         this.chamadoRepository = chamadoRepository;
         this.usuarioRepository = usuarioRepository;
+        this.historicoRepository = historicoRepository;
+        this.notificacaoService = notificacaoService;
     }
 
     public List<ComentarioDTO> listarPorChamado(Long chamadoId) {
@@ -49,6 +58,10 @@ public class ComentarioService {
         comentario.setAutor(autor);
 
         Comentario salvo = comentarioRepository.save(comentario);
+
+        registrarHistorico(chamado, autor, salvo.getTexto());
+        notificarNovoComentario(chamado, autor, salvo.getTexto());
+
         return toDTO(salvo);
     }
 
@@ -56,6 +69,46 @@ public class ComentarioService {
         Comentario comentario = comentarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Comentário não encontrado"));
         comentarioRepository.delete(comentario);
+    }
+
+    private void registrarHistorico(Chamado chamado, Usuario autor, String texto) {
+        Historico historico = new Historico();
+        historico.setChamado(chamado);
+        historico.setUsuario(autor);
+        historico.setTipoEvento(TipoEventoHistorico.COMENTARIO);
+        historico.setDescricao(autor.getNome() + " comentou: " + resumir(texto));
+        historicoRepository.save(historico);
+    }
+
+    /**
+     * Notifica o "outro lado" do chamado sobre o novo comentário:
+     * se quem comentou foi o cliente, avisa o técnico responsável (e vice-versa).
+     */
+    private void notificarNovoComentario(Chamado chamado, Usuario autor, String texto) {
+        String mensagem = autor.getNome() + " comentou no chamado #" + chamado.getId()
+                + " (" + chamado.getTitulo() + "): " + resumir(texto);
+
+        Usuario cliente = chamado.getCliente();
+        Usuario tecnico = chamado.getTecnico();
+
+        boolean autorEhCliente = cliente != null && cliente.getId().equals(autor.getId());
+
+        if (autorEhCliente) {
+            if (tecnico != null) {
+                notificacaoService.notificar(tecnico, chamado, mensagem);
+            }
+        } else {
+            if (cliente != null && !cliente.getId().equals(autor.getId())) {
+                notificacaoService.notificar(cliente, chamado, mensagem);
+            }
+        }
+    }
+
+    private String resumir(String texto) {
+        if (texto == null) {
+            return "";
+        }
+        return texto.length() > 120 ? texto.substring(0, 117) + "..." : texto;
     }
 
     private ComentarioDTO toDTO(Comentario comentario) {

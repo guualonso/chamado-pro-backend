@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.chamado.dto.UsuarioDTO;
+import com.chamado.model.enums.TipoUsuario;
 import com.chamado.service.UsuarioService;
 
 @RestController
@@ -25,6 +26,15 @@ public class UsuarioController {
     @GetMapping
     public ResponseEntity<List<UsuarioDTO>> listarTodos() {
         return ResponseEntity.ok(usuarioService.listarTodos());
+    }
+
+    /**
+     * Lista todos os usuários técnicos (com seus respectivos níveis N1/N2/N3).
+     * Usado para popular seletores de técnico no escalonamento manual.
+     */
+    @GetMapping("/tecnicos")
+    public ResponseEntity<List<UsuarioDTO>> listarTecnicos() {
+        return ResponseEntity.ok(usuarioService.listarPorTipo(TipoUsuario.TECNICO));
     }
 
     @GetMapping("/{id}")

@@ -63,6 +63,9 @@ public class SecurityConfig {
             .requestMatchers("/usuarios/**").authenticated()
             .requestMatchers("/comentarios/**").authenticated()
             .requestMatchers("/chamados/**").authenticated()
+            .requestMatchers("/notificacoes/**").authenticated()
+            .requestMatchers("/sla-config/**").authenticated()
+            .requestMatchers("/dashboard/**").authenticated()
             .anyRequest().authenticated()
         )
         .headers(headers -> headers.frameOptions(frame -> frame.disable()));

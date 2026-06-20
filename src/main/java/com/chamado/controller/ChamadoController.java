@@ -3,6 +3,7 @@ package com.chamado.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,16 +14,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.chamado.dto.ChamadoDTO;
+import com.chamado.dto.EscalonarRequestDTO;
+import com.chamado.dto.HistoricoDTO;
+import com.chamado.model.Usuario;
 import com.chamado.service.ChamadoService;
+import com.chamado.service.CurrentUserService;
 
 @RestController
 @RequestMapping("/chamados")
 public class ChamadoController {
 
     private final ChamadoService chamadoService;
+    private final CurrentUserService currentUserService;
 
-    public ChamadoController(ChamadoService chamadoService) {
+    public ChamadoController(ChamadoService chamadoService, CurrentUserService currentUserService) {
         this.chamadoService = chamadoService;
+        this.currentUserService = currentUserService;
     }
 
     @GetMapping
@@ -69,5 +76,17 @@ public class ChamadoController {
     @PutMapping("/{id}/atribuir-tecnico/{tecnicoId}")
     public ResponseEntity<ChamadoDTO> atribuirTecnico(@PathVariable Long id, @PathVariable Long tecnicoId) {
         return ResponseEntity.ok(chamadoService.atribuirTecnico(id, tecnicoId));
+    }
+
+    @PutMapping("/{id}/escalonar")
+    public ResponseEntity<ChamadoDTO> escalonarChamado(@PathVariable Long id,
+            @RequestBody EscalonarRequestDTO request, Authentication authentication) {
+        Usuario solicitante = currentUserService.getUsuarioAtual(authentication);
+        return ResponseEntity.ok(chamadoService.escalonarChamado(id, request, solicitante));
+    }
+
+    @GetMapping("/{id}/historico")
+    public ResponseEntity<List<HistoricoDTO>> listarHistorico(@PathVariable Long id) {
+        return ResponseEntity.ok(chamadoService.listarHistorico(id));
     }
 }
