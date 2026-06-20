@@ -1,0 +1,15 @@
+﻿target/
+*.class
+*.tar
+*.jar
+*.war
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+.DS_Store
+Thumbs.db
+*.log
+.env
