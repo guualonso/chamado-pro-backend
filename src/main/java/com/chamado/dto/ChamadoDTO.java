@@ -1,5 +1,8 @@
 package com.chamado.dto;
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -15,7 +18,9 @@ import com.chamado.model.enums.StatusSLA;
 @Setter
 public class ChamadoDTO {
     private Long id;
+    @Size(max = 200)
     private String titulo;
+    @Size(max = 5000)
     private String descricao;
     private StatusChamado status;
     private CategoriaProblema categoria;
@@ -27,7 +32,10 @@ public class ChamadoDTO {
     private LocalDateTime prazoPrimeiraResposta;
     private LocalDateTime prazoResolucao;
     private StatusSLA statusSla;
+    @DecimalMin("0")
+    @DecimalMax("5")
     private double avaliacao;
+    @Size(max = 2000)
     private String feedback;
     private Long clienteId;
     private String clienteNome;

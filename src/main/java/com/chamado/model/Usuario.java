@@ -6,6 +6,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
+import com.chamado.config.CriptografiaConverter;
 import com.chamado.model.enums.TipoUsuario;
 import com.chamado.model.enums.NivelTecnico;
 
@@ -50,8 +53,26 @@ public class Usuario {
     /**
      * API Key do CallMeBot vinculada ao número de telefone acima.
      * Necessária para o envio real de mensagens via WhatsApp.
+     * Armazenada criptografada (AES-256-GCM).
      */
+    @Convert(converter = CriptografiaConverter.class)
+    @Column(length = 512)
     private String whatsappApiKey;
 
-    // Getters e Setters
+    /**
+     * Consentimento explícito (opt-in) do próprio usuário para receber
+     * notificações via WhatsApp, que envolve um terceiro (CallMeBot).
+     * Sem ele nenhuma mensagem é enviada por WhatsApp.
+     */
+    private Boolean consentimentoWhatsapp = false;
+
+    private LocalDateTime dataConsentimentoWhatsapp;
+
+    /** Versão dos Termos de Uso / Política de Privacidade aceita pelo usuário. */
+    private String versaoTermosAceita;
+
+    private LocalDateTime dataAceiteTermos;
+
+    /** Indica que o usuário solicitou a exclusão e teve seus dados anonimizados. */
+    private Boolean anonimizado = false;
 }

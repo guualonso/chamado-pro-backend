@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.chamado.dto.EscalonarRequestDTO;
+import com.chamado.exception.RecursoNaoEncontradoException;
+import com.chamado.exception.RegraNegocioException;
 import com.chamado.model.Chamado;
 import com.chamado.model.Historico;
 import com.chamado.model.Usuario;
@@ -47,13 +49,13 @@ public class EscalonamentoService {
     @Transactional
     public Chamado escalonarManual(Long chamadoId, EscalonarRequestDTO request, Usuario solicitante) {
         Chamado chamado = chamadoRepository.findById(chamadoId)
-                .orElseThrow(() -> new RuntimeException("Chamado não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Chamado não encontrado"));
 
         NivelTecnico nivelAtual = chamado.getNivelAtual() != null ? chamado.getNivelAtual() : NivelTecnico.N1;
         NivelTecnico novoNivel = request.getNovoNivel() != null ? request.getNovoNivel() : proximoNivel(nivelAtual);
 
         if (novoNivel.ordinal() <= nivelAtual.ordinal()) {
-            throw new RuntimeException("O novo nível precisa ser maior que o nível atual do chamado");
+            throw new RegraNegocioException("O novo nível precisa ser maior que o nível atual do chamado");
         }
 
         return aplicarEscalonamento(chamado, novoNivel, request.getTecnicoId(), request.getMotivo(), solicitante, false);
@@ -81,9 +83,9 @@ public class EscalonamentoService {
         Usuario novoTecnico = null;
         if (tecnicoId != null) {
             novoTecnico = usuarioRepository.findById(tecnicoId)
-                    .orElseThrow(() -> new RuntimeException("Técnico não encontrado"));
+                    .orElseThrow(() -> new RecursoNaoEncontradoException("Técnico não encontrado"));
             if (novoTecnico.getTipoUsuario() != TipoUsuario.TECNICO) {
-                throw new RuntimeException("O usuário informado não é um técnico");
+                throw new RegraNegocioException("O usuário informado não é um técnico");
             }
         } else {
             List<Usuario> candidatos = usuarioRepository.findByTipoUsuarioAndNivelTecnico(TipoUsuario.TECNICO, novoNivel);

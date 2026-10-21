@@ -2,9 +2,11 @@ package com.chamado.service;
 
 import java.util.List;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import com.chamado.dto.ComentarioDTO;
+import com.chamado.exception.RecursoNaoEncontradoException;
 import com.chamado.model.Chamado;
 import com.chamado.model.Comentario;
 import com.chamado.model.Historico;
@@ -13,30 +15,26 @@ import com.chamado.model.enums.TipoEventoHistorico;
 import com.chamado.repository.ChamadoRepository;
 import com.chamado.repository.ComentarioRepository;
 import com.chamado.repository.HistoricoRepository;
-import com.chamado.repository.UsuarioRepository;
 
 @Service
 public class ComentarioService {
 
     private final ComentarioRepository comentarioRepository;
     private final ChamadoRepository chamadoRepository;
-    private final UsuarioRepository usuarioRepository;
     private final HistoricoRepository historicoRepository;
     private final NotificacaoService notificacaoService;
 
     public ComentarioService(ComentarioRepository comentarioRepository, ChamadoRepository chamadoRepository,
-            UsuarioRepository usuarioRepository, HistoricoRepository historicoRepository,
-            NotificacaoService notificacaoService) {
+            HistoricoRepository historicoRepository, NotificacaoService notificacaoService) {
         this.comentarioRepository = comentarioRepository;
         this.chamadoRepository = chamadoRepository;
-        this.usuarioRepository = usuarioRepository;
         this.historicoRepository = historicoRepository;
         this.notificacaoService = notificacaoService;
     }
 
-    public List<ComentarioDTO> listarPorChamado(Long chamadoId) {
-        Chamado chamado = chamadoRepository.findById(chamadoId)
-                .orElseThrow(() -> new RuntimeException("Chamado não encontrado"));
+    public List<ComentarioDTO> listarPorChamado(Long chamadoId, Usuario solicitante) {
+        Chamado chamado = buscarChamado(chamadoId);
+        CurrentUserService.verificarAcessoChamado(solicitante, chamado);
 
         return comentarioRepository.findByChamado(chamado)
                 .stream()
@@ -44,13 +42,13 @@ public class ComentarioService {
                 .toList();
     }
 
-    public ComentarioDTO criarComentario(Long chamadoId, ComentarioDTO dto) {
-        Chamado chamado = chamadoRepository.findById(chamadoId)
-                .orElseThrow(() -> new RuntimeException("Chamado não encontrado"));
-
-        // Buscar o usuário autor pelo id ou email fornecido no DTO
-        Usuario autor = usuarioRepository.findByEmail(dto.getAutorNome())
-                .orElseThrow(() -> new RuntimeException("Usuário autor não encontrado"));
+    /**
+     * O autor é sempre o usuário autenticado; não é aceito do corpo da
+     * requisição, evitando que alguém comente em nome de outra pessoa.
+     */
+    public ComentarioDTO criarComentario(Long chamadoId, ComentarioDTO dto, Usuario autor) {
+        Chamado chamado = buscarChamado(chamadoId);
+        CurrentUserService.verificarAcessoChamado(autor, chamado);
 
         Comentario comentario = new Comentario();
         comentario.setTexto(dto.getTexto());
@@ -65,10 +63,20 @@ public class ComentarioService {
         return toDTO(salvo);
     }
 
-    public void excluirComentario(Long id) {
+    /** Somente o autor do comentário ou um ADMIN pode excluí-lo. */
+    public void excluirComentario(Long id, Usuario solicitante) {
         Comentario comentario = comentarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Comentário não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Comentário não encontrado"));
+        boolean autor = comentario.getAutor() != null && comentario.getAutor().getId().equals(solicitante.getId());
+        if (!autor && !CurrentUserService.isAdmin(solicitante)) {
+            throw new AccessDeniedException("Somente o autor ou um administrador pode excluir o comentário");
+        }
         comentarioRepository.delete(comentario);
+    }
+
+    private Chamado buscarChamado(Long chamadoId) {
+        return chamadoRepository.findById(chamadoId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Chamado não encontrado"));
     }
 
     private void registrarHistorico(Chamado chamado, Usuario autor, String texto) {
@@ -119,6 +127,7 @@ public class ComentarioService {
         dto.setChamadoId(comentario.getChamado().getId());
         if (comentario.getAutor() != null) {
             dto.setAutorNome(comentario.getAutor().getNome());
+            dto.setAutorId(comentario.getAutor().getId());
         }
         return dto;
     }

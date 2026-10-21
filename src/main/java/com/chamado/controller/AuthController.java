@@ -7,6 +7,8 @@ import com.chamado.dto.LoginRequest;
 import com.chamado.dto.TokenResponse;
 import com.chamado.service.AuthService;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -18,7 +20,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
         String token = authService.authenticateAndGetToken(request.getEmail(), request.getSenha());
         return ResponseEntity.ok(new TokenResponse(token, "Bearer"));
     }
