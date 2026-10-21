@@ -45,7 +45,7 @@ public class WhatsAppService {
      */
     public boolean enviarMensagem(String telefone, String apiKey, String mensagem) {
         if (!habilitado) {
-            log.info("[WhatsApp] Envio desabilitado (whatsapp.callmebot.enabled=false). Mensagem não enviada: {}", mensagem);
+            log.info("[WhatsApp] Envio desabilitado (whatsapp.callmebot.enabled=false). Mensagem não enviada.");
             return false;
         }
 
@@ -67,15 +67,24 @@ public class WhatsAppService {
             ResponseEntity<String> resposta = restTemplate.getForEntity(uri, String.class);
 
             if (resposta.getStatusCode().is2xxSuccessful()) {
-                log.info("[WhatsApp] Mensagem enviada para {}", telefone);
+                log.info("[WhatsApp] Mensagem enviada para {}", mascarar(telefone));
                 return true;
             }
 
-            log.warn("[WhatsApp] Falha ao enviar mensagem para {}. Status: {}", telefone, resposta.getStatusCode());
+            log.warn("[WhatsApp] Falha ao enviar mensagem para {}. Status: {}", mascarar(telefone), resposta.getStatusCode());
             return false;
         } catch (Exception e) {
-            log.error("[WhatsApp] Erro ao enviar mensagem para {}: {}", telefone, e.getMessage());
+            // Não loga e.getMessage(): a URL da requisição contém a API Key do destinatário
+            log.error("[WhatsApp] Erro ao enviar mensagem para {}: {}", mascarar(telefone), e.getClass().getSimpleName());
             return false;
         }
+    }
+
+    /** Evita gravar o telefone completo (dado pessoal) nos logs. */
+    private static String mascarar(String telefone) {
+        if (telefone == null || telefone.length() < 4) {
+            return "****";
+        }
+        return "*".repeat(telefone.length() - 4) + telefone.substring(telefone.length() - 4);
     }
 }

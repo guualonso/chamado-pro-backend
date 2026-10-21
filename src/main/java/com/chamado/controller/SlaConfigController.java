@@ -3,6 +3,7 @@ package com.chamado.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -14,12 +15,15 @@ import com.chamado.dto.SlaConfigDTO;
 import com.chamado.model.enums.Prioridade;
 import com.chamado.service.SlaService;
 
+import jakarta.validation.Valid;
+
 /**
  * Endpoints administrativos para visualizar e editar os prazos de SLA
  * (primeira resposta e resolução) por nível de prioridade.
  */
 @RestController
 @RequestMapping("/sla-config")
+@PreAuthorize("hasRole('ADMIN')")
 public class SlaConfigController {
 
     private final SlaService slaService;
@@ -35,7 +39,7 @@ public class SlaConfigController {
 
     @PutMapping("/{prioridade}")
     public ResponseEntity<SlaConfigDTO> atualizar(@PathVariable Prioridade prioridade,
-                                                    @RequestBody SlaConfigDTO dto) {
+                                                    @Valid @RequestBody SlaConfigDTO dto) {
         return ResponseEntity.ok(slaService.atualizarConfiguracao(prioridade, dto));
     }
 }

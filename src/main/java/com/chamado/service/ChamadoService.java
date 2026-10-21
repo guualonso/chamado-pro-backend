@@ -3,11 +3,14 @@ package com.chamado.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import com.chamado.dto.ChamadoDTO;
 import com.chamado.dto.EscalonarRequestDTO;
 import com.chamado.dto.HistoricoDTO;
+import com.chamado.exception.RecursoNaoEncontradoException;
+import com.chamado.exception.RegraNegocioException;
 import com.chamado.model.Chamado;
 import com.chamado.model.Historico;
 import com.chamado.model.Usuario;
@@ -44,7 +47,12 @@ public class ChamadoService {
         this.escalonamentoService = escalonamentoService;
     }
 
-    public ChamadoDTO criarChamado(ChamadoDTO dto) {
+    public ChamadoDTO criarChamado(ChamadoDTO dto, Usuario solicitante) {
+        if (dto.getTitulo() == null || dto.getTitulo().isBlank()
+                || dto.getDescricao() == null || dto.getDescricao().isBlank()) {
+            throw new RegraNegocioException("Título e descrição são obrigatórios");
+        }
+
         Chamado chamado = new Chamado();
         chamado.setTitulo(dto.getTitulo());
         chamado.setDescricao(dto.getDescricao());
@@ -61,17 +69,20 @@ public class ChamadoService {
                 : slaService.sugerirPrioridade(dto.getCategoria());
         chamado.setPrioridade(prioridade);
 
-        if (dto.getClienteId() != null) {
-            var cliente = usuarioRepository.findById(dto.getClienteId())
-                    .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
-            chamado.setCliente(cliente);
+        // O cliente do chamado é sempre o usuário autenticado. Somente um ADMIN
+        // pode abrir um chamado em nome de outro usuário (clienteId).
+        Usuario cliente = solicitante;
+        if (CurrentUserService.isAdmin(solicitante) && dto.getClienteId() != null) {
+            cliente = usuarioRepository.findById(dto.getClienteId())
+                    .orElseThrow(() -> new RecursoNaoEncontradoException("Cliente não encontrado"));
         }
+        chamado.setCliente(cliente);
 
         slaService.calcularPrazos(chamado);
 
         Chamado salvo = chamadoRepository.save(chamado);
 
-        registrarHistorico(salvo, null, TipoEventoHistorico.CRIACAO,
+        registrarHistorico(salvo, solicitante, TipoEventoHistorico.CRIACAO,
                 "Chamado criado com prioridade " + prioridade + " (nível " + salvo.getNivelAtual() + ")");
 
         notificarNovoChamado(salvo);
@@ -85,48 +96,65 @@ public class ChamadoService {
                 .toList();
     }
 
-    public ChamadoDTO buscarPorId(Long id) {
-        Chamado chamado = chamadoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Chamado não encontrado"));
+    public ChamadoDTO buscarPorId(Long id, Usuario solicitante) {
+        Chamado chamado = buscarEntidade(id);
+        CurrentUserService.verificarAcessoChamado(solicitante, chamado);
         return toDTO(chamado);
     }
 
-    public ChamadoDTO atualizarChamado(Long id, ChamadoDTO dto) {
-        Chamado chamado = chamadoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Chamado não encontrado"));
+    /**
+     * Atualiza o chamado respeitando o perfil de quem solicita:
+     * - CLIENTE (dono): pode editar título/descrição e enviar avaliação/feedback;
+     * - TECNICO/ADMIN: podem alterar status, categoria e prioridade.
+     */
+    public ChamadoDTO atualizarChamado(Long id, ChamadoDTO dto, Usuario solicitante) {
+        Chamado chamado = buscarEntidade(id);
+        CurrentUserService.verificarAcessoChamado(solicitante, chamado);
 
-        chamado.setTitulo(dto.getTitulo());
-        chamado.setDescricao(dto.getDescricao());
+        boolean equipe = CurrentUserService.isAdmin(solicitante) || CurrentUserService.isTecnico(solicitante);
+        boolean dono = chamado.getCliente() != null && chamado.getCliente().getId().equals(solicitante.getId());
+
+        if (dto.getTitulo() != null && !dto.getTitulo().isBlank()) {
+            chamado.setTitulo(dto.getTitulo());
+        }
+        if (dto.getDescricao() != null && !dto.getDescricao().isBlank()) {
+            chamado.setDescricao(dto.getDescricao());
+        }
 
         StatusChamado statusAnterior = chamado.getStatus();
-        if (dto.getStatus() != null && dto.getStatus() != statusAnterior) {
+        if (equipe && dto.getStatus() != null && dto.getStatus() != statusAnterior) {
             chamado.setStatus(dto.getStatus());
 
             if (chamado.getDataPrimeiraResposta() == null && dto.getStatus() == StatusChamado.EM_ANDAMENTO) {
                 chamado.setDataPrimeiraResposta(LocalDateTime.now());
             }
 
-            registrarHistorico(chamado, chamado.getTecnico(), TipoEventoHistorico.MUDANCA_STATUS,
+            registrarHistorico(chamado, solicitante, TipoEventoHistorico.MUDANCA_STATUS,
                     "Status alterado de " + statusAnterior + " para " + dto.getStatus());
+        } else if (!equipe && dto.getStatus() != null && dto.getStatus() != statusAnterior) {
+            throw new AccessDeniedException("Somente técnicos e administradores podem alterar o status");
         }
 
-        if (dto.getCategoria() != null) {
+        if (equipe && dto.getCategoria() != null) {
             chamado.setCategoria(dto.getCategoria());
         }
 
         Prioridade prioridadeAnterior = chamado.getPrioridade();
-        if (dto.getPrioridade() != null && dto.getPrioridade() != prioridadeAnterior) {
+        if (equipe && dto.getPrioridade() != null && dto.getPrioridade() != prioridadeAnterior) {
             chamado.setPrioridade(dto.getPrioridade());
             slaService.calcularPrazos(chamado);
-            registrarHistorico(chamado, chamado.getTecnico(), TipoEventoHistorico.MUDANCA_PRIORIDADE,
+            registrarHistorico(chamado, solicitante, TipoEventoHistorico.MUDANCA_PRIORIDADE,
                     "Prioridade alterada de " + prioridadeAnterior + " para " + dto.getPrioridade());
         }
 
-        if (dto.getAvaliacao() > 0) {
-            chamado.setAvaliacao(dto.getAvaliacao());
-        }
-        if (dto.getFeedback() != null && !dto.getFeedback().isBlank()) {
-            chamado.setFeedback(dto.getFeedback());
+        // Avaliação e feedback são exclusivos do cliente que abriu o chamado
+        if (dono) {
+            if (dto.getAvaliacao() > 0) {
+                chamado.setAvaliacao(dto.getAvaliacao());
+            }
+            if (dto.getFeedback() != null && !dto.getFeedback().isBlank()) {
+                chamado.setFeedback(dto.getFeedback());
+            }
         }
 
         chamado.setUltimaAtualizacao(LocalDateTime.now());
@@ -144,37 +172,49 @@ public class ChamadoService {
     }
 
     public void excluirChamado(Long id) {
-        Chamado chamado = chamadoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Chamado não encontrado"));
-        chamadoRepository.delete(chamado);
+        chamadoRepository.delete(buscarEntidade(id));
     }
 
-   public List<ChamadoDTO> listarPorCliente(Long clienteId) {
+    public List<ChamadoDTO> listarPorCliente(Long clienteId, Usuario solicitante) {
+        if (!CurrentUserService.isAdmin(solicitante) && !solicitante.getId().equals(clienteId)) {
+            throw new AccessDeniedException("Acesso negado aos chamados de outro cliente");
+        }
         Usuario cliente = usuarioRepository.findById(clienteId)
-                .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Cliente não encontrado"));
         return chamadoRepository.findByCliente(cliente)
                 .stream().map(this::toDTO).toList();
     }
 
-    public List<ChamadoDTO> listarPorTecnico(Long tecnicoId) {
+    public List<ChamadoDTO> listarPorTecnico(Long tecnicoId, Usuario solicitante) {
+        if (!CurrentUserService.isAdmin(solicitante) && !solicitante.getId().equals(tecnicoId)) {
+            throw new AccessDeniedException("Acesso negado aos chamados de outro técnico");
+        }
         Usuario tecnico = usuarioRepository.findById(tecnicoId)
-                .orElseThrow(() -> new RuntimeException("Técnico não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Técnico não encontrado"));
         return chamadoRepository.findByTecnico(tecnico)
                 .stream().map(this::toDTO).toList();
     }
 
     public List<ChamadoDTO> listarPorAdmin(Long adminId) {
         Usuario admin = usuarioRepository.findById(adminId)
-                .orElseThrow(() -> new RuntimeException("Admin não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Admin não encontrado"));
         return chamadoRepository.findByAdmin(admin)
                 .stream().map(this::toDTO).toList();
     }
 
-    public ChamadoDTO atribuirTecnico(Long chamadoId, Long tecnicoId) {
-        Chamado chamado = chamadoRepository.findById(chamadoId)
-                .orElseThrow(() -> new RuntimeException("Chamado não encontrado"));
+    /**
+     * ADMIN pode atribuir qualquer técnico; um TECNICO só pode atribuir a si mesmo.
+     */
+    public ChamadoDTO atribuirTecnico(Long chamadoId, Long tecnicoId, Usuario solicitante) {
+        if (!CurrentUserService.isAdmin(solicitante) && !solicitante.getId().equals(tecnicoId)) {
+            throw new AccessDeniedException("Técnicos só podem atribuir chamados a si mesmos");
+        }
+        Chamado chamado = buscarEntidade(chamadoId);
         Usuario tecnico = usuarioRepository.findById(tecnicoId)
-                .orElseThrow(() -> new RuntimeException("Técnico não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Técnico não encontrado"));
+        if (tecnico.getTipoUsuario() != TipoUsuario.TECNICO) {
+            throw new RegraNegocioException("O usuário informado não é um técnico");
+        }
 
         chamado.setTecnico(tecnico);
         chamado.setStatus(StatusChamado.EM_ANDAMENTO);
@@ -208,13 +248,18 @@ public class ChamadoService {
     /**
      * Lista o histórico (auditoria) de eventos do chamado, mais recentes primeiro.
      */
-    public List<HistoricoDTO> listarHistorico(Long chamadoId) {
-        Chamado chamado = chamadoRepository.findById(chamadoId)
-                .orElseThrow(() -> new RuntimeException("Chamado não encontrado"));
+    public List<HistoricoDTO> listarHistorico(Long chamadoId, Usuario solicitante) {
+        Chamado chamado = buscarEntidade(chamadoId);
+        CurrentUserService.verificarAcessoChamado(solicitante, chamado);
         return historicoRepository.findByChamadoOrderByDataHoraDesc(chamado)
                 .stream()
                 .map(this::toHistoricoDTO)
                 .toList();
+    }
+
+    private Chamado buscarEntidade(Long id) {
+        return chamadoRepository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Chamado não encontrado"));
     }
 
     private void registrarHistorico(Chamado chamado, Usuario usuario, TipoEventoHistorico tipo, String descricao) {

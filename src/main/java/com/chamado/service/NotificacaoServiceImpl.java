@@ -35,13 +35,15 @@ public class NotificacaoServiceImpl implements NotificacaoService {
         notificacao.setMensagem(mensagem);
         notificacao.setLida(false);
 
+        // WhatsApp envolve um terceiro (CallMeBot): só é usado com consentimento explícito do titular
         boolean possuiWhatsapp = destinatario.getTelefone() != null && !destinatario.getTelefone().isBlank()
-                && destinatario.getWhatsappApiKey() != null && !destinatario.getWhatsappApiKey().isBlank();
+                && destinatario.getWhatsappApiKey() != null && !destinatario.getWhatsappApiKey().isBlank()
+                && Boolean.TRUE.equals(destinatario.getConsentimentoWhatsapp());
 
         if (possuiWhatsapp) {
             notificacao.setCanal(CanalNotificacao.WHATSAPP);
             boolean enviado = whatsAppService.enviarMensagem(
-                    destinatario.getTelefone(), destinatario.getWhatsappApiKey(), mensagem);
+                    destinatario.getTelefone(), destinatario.getWhatsappApiKey(), mensagemMinima(chamado));
             notificacao.setStatus(enviado ? StatusNotificacao.ENVIADA : StatusNotificacao.FALHA);
         } else {
             notificacao.setCanal(CanalNotificacao.SISTEMA);
@@ -49,6 +51,19 @@ public class NotificacaoServiceImpl implements NotificacaoService {
         }
 
         notificacaoRepository.save(notificacao);
+    }
+
+    /**
+     * Texto enviado ao terceiro: não inclui título, descrição ou comentários do
+     * chamado (que podem conter dados pessoais/sensíveis). O conteúdo completo
+     * fica disponível apenas dentro do sistema.
+     */
+    private String mensagemMinima(Chamado chamado) {
+        if (chamado == null || chamado.getId() == null) {
+            return "ChamadoPro: você tem uma nova notificação. Acesse o sistema para ver os detalhes.";
+        }
+        return "ChamadoPro: há uma atualização no chamado #" + chamado.getId()
+                + ". Acesse o sistema para ver os detalhes.";
     }
 
     @Override

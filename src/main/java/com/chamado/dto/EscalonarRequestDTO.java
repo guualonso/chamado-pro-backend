@@ -2,6 +2,7 @@ package com.chamado.dto;
 
 import com.chamado.model.enums.NivelTecnico;
 
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,5 +18,6 @@ import lombok.Setter;
 public class EscalonarRequestDTO {
     private NivelTecnico novoNivel;
     private Long tecnicoId;
+    @Size(max = 1000)
     private String motivo;
 }
